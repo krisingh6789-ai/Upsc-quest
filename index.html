@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LBSNAA QUEST — Gamified UPSC Study RPG &amp; Infinite Web Bookshelf</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FontAwesome 6 Arcade & RPG Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <!-- Google Fonts: Retro Arcade Pixel + Crisp Modern UI + Comfortable Serif E-Reader -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400..700;1,7..72,400..600&family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Custom Focused Academic Stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LBSNAA Quest" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+</head>
+<body class="selection:bg-cyan-400 selection:text-slate-950">
+  <a href="#app-root" class="skip-to-content">Skip to main content</a>
+  <div aria-live="polite" aria-atomic="true" class="sr-only" id="sr-announce"></div>
+
+  <!-- ========================================================================
+       PARTICLE / CONFETTI CANVAS & LEVEL-UP SCREEN FLASH OVERLAYS
+       ======================================================================== -->
+  <canvas id="particle-canvas" class="fixed inset-0 pointer-events-none z-[9995]"></canvas>
+  <div id="levelup-flash-overlay" class="fixed inset-0 pointer-events-none z-[9992] hidden"></div>
+
+  <!-- Toast Stack -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-[9998] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- PWA Install Banner (shown on supported browsers) -->
+  <div id="pwa-install-banner" class="fixed bottom-6 left-6 right-6 z-[9997] hidden sm:flex items-center justify-between gap-4 px-4 py-3 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-cyan-400/40 shadow-[0_8px_32px_rgba(0,0,0,0.6)] transform transition-all duration-300">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400">
+        <i class="fa-solid fa-download text-lg"></i>
+      </div>
+      <div>
+        <div class="text-sm font-bold text-slate-100">Install LBSNAA Quest</div>
+        <div class="text-xs text-slate-400">Add to home screen — works like a mobile app</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="btn-pwa-install" class="px-4 py-2 rounded-xl bg-cyan-400 text-slate-950 font-bold text-xs shadow-[0_4px_12px_rgba(20,184,166,0.4)] hover:bg-cyan-300 transition">Install</button>
+      <button id="btn-pwa-dismiss" class="px-2 py-1 rounded-lg text-slate-400 hover:text-slate-200 transition"><i class="fa-solid fa-xmark text-xs"></i></button>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       PERMANENT TOP DYNAMIC CHARACTER STATUS HUD
+       ======================================================================== -->
+  <header class="sticky top-0 z-40 border-b-2 border-cyan-400/40 bg-[#090d1f]/95 backdrop-blur-md shadow-[0_6px_30px_rgba(0,0,0,0.75)]">
+    <div class="max-w-[1440px] mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+
+      <!-- Left: Avatar + Level + Title -->
+      <div class="flex items-center gap-3">
+        <button id="hud-avatar-btn" title="Click to Switch RPG Class Avatar"
+          class="relative w-13 h-13 sm:w-14 sm:h-14 rounded-xl border-2 border-amber-400 bg-slate-900/90 flex items-center justify-center shadow-[0_0_16px_rgba(255,209,102,0.35)] hover:scale-105 transition cursor-pointer group p-2.5">
+          <i id="hud-avatar-icon" class="fa-solid fa-shield-halved text-2xl text-cyan-300"></i>
+          <span id="hud-level-badge" class="font-arcade text-[9px] absolute -bottom-2 -right-2 bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded border border-slate-950 font-bold">
+            LV.1
+          </span>
+        </button>
+
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-arcade text-[11px] sm:text-xs text-cyan-300 tracking-wider">LBSNAA QUEST</span>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-purple-950/90 border border-purple-400/50 text-purple-200 font-semibold" id="hud-rank-title">
+              Novice Scribe (NCERT Initiate)
+            </span>
+          </div>
+
+          <!-- Animated XP Progress Bar -->
+          <div class="mt-1.5 flex items-center gap-2.5">
+            <div class="xp-bar-track w-40 sm:w-60 h-3.5">
+              <div id="hud-xp-fill" class="xp-bar-fill h-full" style="width: 15%"></div>
+            </div>
+            <span id="hud-xp-text" class="text-xs font-bold text-amber-300 whitespace-nowrap">0 / 200 XP</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center-Right: RPG Vital Gauges (Mana, Books, Streak, Accuracy) -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <!-- Focus Charge Mini Pill -->
+        <div class="px-3 py-1.5 rounded-lg bg-slate-900/90 border border-fuchsia-500/40 flex items-center gap-2" title="Focus Charge (Recharged via Pomodoro Focus Station)">
+          <i class="fa-solid fa-bolt text-fuchsia-400 text-sm"></i>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 leading-none">Mana</div>
+            <div id="hud-mana-text" class="text-xs font-bold text-fuchsia-300">100%</div>
+          </div>
+        </div>
+
+        <!-- Equipped Books Pill -->
+        <div class="px-3 py-1.5 rounded-lg bg-slate-900/90 border border-cyan-500/35 flex items-center gap-2">
+          <i class="fa-solid fa-book-journal-whills text-cyan-400 text-sm"></i>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 leading-none">Shelf</div>
+            <div id="hud-books-count" class="text-xs font-bold text-cyan-200">11 Books</div>
+          </div>
+        </div>
+
+        <!-- Quiz Kill Streak Pill -->
+        <div class="px-3 py-1.5 rounded-lg bg-slate-900/90 border border-amber-500/40 flex items-center gap-2">
+          <i class="fa-solid fa-fire text-amber-400 text-sm"></i>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 leading-none">Combo</div>
+            <div id="hud-streak-count" class="text-xs font-bold text-amber-300">0x</div>
+          </div>
+        </div>
+
+        <!-- Badges Unlocked Pill -->
+        <div class="hidden md:flex px-3 py-1.5 rounded-lg bg-slate-900/90 border border-emerald-500/40 items-center gap-2">
+          <i class="fa-solid fa-medal text-emerald-400 text-sm"></i>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-400 leading-none">Relics</div>
+            <div id="hud-badges-count" class="text-xs font-bold text-emerald-300">1 / 12</div>
+          </div>
+        </div>
+
+        <!-- Arcade Controls: SFX, CRT Scanline, Save Manager, Dark Mode -->
+        <div class="flex items-center gap-1.5">
+          <button id="btn-toggle-sfx" class="focus-btn px-2.5 py-1.5 text-xs" title="Toggle 8-Bit Arcade Sound Effects">
+            <i class="fa-solid fa-volume-high"></i>
+            <span class="hidden xl:inline">SFX</span>
+          </button>
+          <button id="btn-toggle-crt" class="focus-btn px-2.5 py-1.5 text-xs opacity-75" title="Toggle Retro CRT Scanlines">
+            <i class="fa-solid fa-tv"></i>
+          </button>
+          <button id="btn-toggle-theme" class="focus-btn px-2.5 py-1.5 text-xs" title="Toggle Light / Dark Mode">
+            <i class="fa-solid fa-moon"></i>
+            <span class="hidden sm:inline">Theme</span>
+          </button>
+          <button id="btn-open-profile" class="focus-btn focus-btn-indigo px-2.5 py-1.5 text-xs" title="Character Sheet, Avatars & Save Backup">
+            <i class="fa-solid fa-id-card-clip"></i>
+            <span class="hidden sm:inline">Hero</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Command Deck -->
+    <nav class="bg-[#070b19]/95 border-t border-slate-800/90">
+      <div class="max-w-[1440px] mx-auto px-3 sm:px-6 py-2 flex items-center gap-2 overflow-x-auto">
+        <button data-tab="sanctum" class="nav-tab-btn focus-btn focus-btn-accent px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-book"></i>
+          <span>1. Shelf &amp; Sanctum</span>
+        </button>
+        <button data-tab="grabber" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-globe"></i>
+          <span>2. Book Grabber &amp; Vault</span>
+        </button>
+        <button data-tab="arena" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-khanda"></i>
+          <span>3. Quiz Dungeon</span>
+        </button>
+        <button data-tab="ca" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-newspaper"></i>
+          <span>4. Current Affairs</span>
+        </button>
+        <button data-tab="pyq" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-history"></i>
+          <span>5. PYQ Bank</span>
+        </button>
+        <button data-tab="mains" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-pen-nib"></i>
+          <span>6. Mains Answer Writing</span>
+        </button>
+        <button data-tab="flashcards" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-memory"></i>
+          <span>7. Flashcards</span>
+        </button>
+        <button data-tab="highlights" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-highlighter"></i>
+          <span>8. Book Highlights</span>
+        </button>
+        <button data-tab="analytics" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>9. Analytics</span>
+        </button>
+        <button data-tab="exam" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-clock"></i>
+          <span>10. Exam Simulator</span>
+        </button>
+        <button data-tab="goal" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-flag-checkered"></i>
+          <span>11. Goal Tracker</span>
+        </button>
+        <button data-tab="hero" class="nav-tab-btn focus-btn px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+          <i class="fa-solid fa-id-card"></i>
+          <span>12. Profile &amp; Save</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ========================================================================
+       MAIN APPLICATION WORKSPACE
+       ======================================================================== -->
+  <main id="app-root" class="max-w-[1440px] mx-auto px-3 sm:px-6 py-6 space-y-6">
+
+    <!-- ======================================================================
+         TAB 1: RPG BOOKSHELF & STUDY SANCTUM (SHELVES + QUEST LOG + MANA TIMER)
+         ====================================================================== -->
+    <section id="tab-sanctum" class="tab-panel active space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- LEFT 8 COLS: 2.5D INTERACTIVE RETRO-ARCADE BOOKSHELF -->
+        <div class="lg:col-span-8 space-y-4">
+          <div class="focus-card p-4 sm:p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <h1 class="font-arcade text-sm sm:text-base text-amber-300 flex items-center gap-2">
+                  <i class="fa-solid fa-book-sparkles text-cyan-400"></i>
+                  INTERACTIVE UPSC GRIMOIRE SHELVES
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-300 mt-1">
+                  Spine thickness &amp; height scale dynamically by real page count. Click any book to read the <strong>complete full book</strong> (+5 XP/page)!
+                </p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <button id="btn-equip-starter" class="focus-btn px-3 py-1.5 text-xs" title="Equip Essential 11-Book UPSC Topper Loadout">
+                  <i class="fa-solid fa-bolt text-amber-300"></i> Core 11
+                </button>
+                <button id="btn-equip-all-upsc" class="focus-btn focus-btn-indigo px-3 py-1.5 text-xs" title="Equip every book in the complete UPSC catalogue!">
+                  <i class="fa-solid fa-layer-group"></i> Equip All 50 Books
+                </button>
+                <button id="btn-jump-grabber" class="focus-btn focus-btn-accent px-3 py-1.5 text-xs">
+                  <i class="fa-solid fa-magnifying-glass-plus"></i> Grab Internet Book
+                </button>
+              </div>
+            </div>
+
+            <!-- Shelf Subject Filter Bar -->
+            <div id="shelf-filter-bar" class="flex items-center gap-1.5 overflow-x-auto pb-3 mb-3 border-b border-slate-800">
+              <button data-shelf-filter="ALL" class="shelf-filter-pill px-3 py-1 rounded-full text-xs font-bold bg-cyan-400 text-slate-950">All Equipped</button>
+              <button data-shelf-filter="Polity" class="shelf-filter-pill px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Polity &amp; IR</button>
+              <button data-shelf-filter="History" class="shelf-filter-pill px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">History</button>
+              <button data-shelf-filter="Art & Culture" class="shelf-filter-pill px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Art, Culture &amp; Society</button>
+              <button data-shelf-filter="Geography" class="shelf-filter-pill px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Geography</button>
+              <button data-shelf-filter="Economy" class="shelf-filter-pill px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Economy</button>
+              <button data-shelf-filter="Environment" class="shelf-filter-pill px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Environment &amp; Sci</button>
+              <button data-shelf-filter="Ethics" class="shelf-filter-pill px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Ethics (GS-IV)</button>
+              <button data-shelf-filter="Public Administration" class="shelf-filter-pill px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Public Admin (Optional)</button>
+            </div>
+
+            <!-- Hover Book Inspector Strip -->
+            <div id="shelf-inspector" class="mb-5 px-3.5 py-2.5 rounded-lg bg-slate-950/90 border border-cyan-500/30 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+                <span id="inspector-text" class="text-slate-200 font-medium">
+                  Hover over any book spine on the shelf to inspect syllabus &amp; page progress, or click an empty glowing slot to equip a new tome!
+                </span>
+              </div>
+              <span id="inspector-meta" class="font-arcade text-[10px] text-cyan-300">READY</span>
+            </div>
+
+            <!-- 2.5D WOODEN + NEON BOOKSHELF CONTAINER -->
+            <div id="bookshelf-container" class="bookshelf-cabinet">
+              <!-- Dynamically populated by BookshelfEngine in app.js -->
+            </div>
+          </div>
+
+          <!-- Quick Launch Banner to Infinite Quiz Dungeon -->
+          <div class="focus-card focus-card p-4 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div class="w-12 h-12 rounded-xl bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-300 text-xl">
+                <i class="fa-solid fa-dragon"></i>
+              </div>
+              <div>
+                <h2 class="font-arcade text-xs text-amber-300">READY FOR PRELIMS COMBAT?</h2>
+                <p class="text-xs sm:text-sm text-slate-300 mt-0.5">
+                  Enter the <strong>Infinite UPSC Quiz Dungeon</strong> — unlimited 3-statement matrices, pair-matching, PYQ traps &amp; +2 / -0.66 Prelims Mocks!
+                </p>
+              </div>
+            </div>
+            <button id="btn-banner-arena" class="focus-btn focus-btn-accent px-4 py-2.5 text-xs sm:text-sm">
+              <i class="fa-solid fa-khanda"></i> Enter Infinite Quiz Arena
+            </button>
+          </div>
+        </div>
+
+        <!-- RIGHT 4 COLS: MANA RECHARGE TIMER + DAILY QUEST BOARD -->
+        <div class="lg:col-span-4 space-y-5">
+
+          <!-- FOCUS TIMER STATION (POMODORO FOCUS TIMER) -->
+          <div id="mana-station-card" class="focus-card focus-card p-4 sm:p-5">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h2 class="font-arcade text-xs text-fuchsia-300 flex items-center gap-2">
+                  <i class="fa-solid fa-hourglass-start text-cyan-300"></i>
+                  FOCUS TIMER STATION
+                </h2>
+                <p class="text-[11px] text-slate-400 mt-0.5">+10 XP every minute • Full charge unlocks a Relic Badge!</p>
+              </div>
+              <span id="timer-status-pill" class="text-[10px] font-arcade px-2 py-1 rounded bg-slate-900 border border-fuchsia-400/50 text-fuchsia-300">
+                STANDBY
+              </span>
+            </div>
+
+            <!-- Glowing Circular SVG Mana Core -->
+            <div class="relative w-48 h-48 mx-auto my-2 flex items-center justify-center">
+              <svg class="w-full h-full -rotate-90" viewBox="0 0 180 180">
+                <circle cx="90" cy="90" r="76" stroke="rgba(30, 41, 59, 0.9)" stroke-width="11" fill="none"></circle>
+                <circle id="mana-ring-progress" class="focus-ring-circle" cx="90" cy="90" r="76"
+                  stroke="url(#manaGradient)" stroke-width="11" stroke-linecap="round" fill="none"
+                  stroke-dasharray="477.52" stroke-dashoffset="0"></circle>
+                <defs>
+                  <linearGradient id="manaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00f5d4" />
+                    <stop offset="50%" stop-color="#9b5de5" />
+                    <stop offset="100%" stop-color="#f72585" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <span class="text-[10px] uppercase tracking-widest text-cyan-300 font-bold" id="timer-mode-label">POMODORO FOCUS</span>
+                <div id="timer-display" class="font-arcade text-2xl text-white my-1.5 drop-shadow-[0_0_10px_rgba(0,245,212,0.65)]">
+                  25:00
+                </div>
+                <span id="timer-xp-rate" class="text-[11px] text-amber-300 font-semibold">+10 XP / min</span>
+              </div>
+            </div>
+
+            <!-- Duration Presets -->
+            <div class="grid grid-cols-4 gap-1.5 my-3">
+              <button data-minutes="25" class="timer-preset-btn py-1.5 rounded border border-cyan-400 bg-cyan-950/60 text-cyan-200 text-xs font-bold">25m</button>
+              <button data-minutes="50" class="timer-preset-btn py-1.5 rounded border border-slate-700 bg-slate-900 text-slate-300 text-xs font-semibold hover:border-cyan-400">50m</button>
+              <button data-minutes="15" class="timer-preset-btn py-1.5 rounded border border-slate-700 bg-slate-900 text-slate-300 text-xs font-semibold hover:border-cyan-400">15m</button>
+              <button data-minutes="1" class="timer-preset-btn py-1.5 rounded border border-amber-500/50 bg-amber-950/30 text-amber-300 text-xs font-semibold hover:border-amber-400" title="1-Minute Rapid Overcharge Sprint">1m⚡</button>
+            </div>
+
+            <!-- Start / Pause / Reset Controls -->
+            <div class="flex items-center gap-2">
+              <button id="btn-timer-start" class="focus-btn focus-btn-accent flex-1 py-2 text-xs sm:text-sm">
+                <i class="fa-solid fa-play"></i> Start Focus
+              </button>
+              <button id="btn-timer-reset" class="focus-btn px-3 py-2 text-xs sm:text-sm" title="Reset Mana Timer">
+                <i class="fa-solid fa-rotate-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- THE DAILY QUEST BOARD (GAMIFIED TO-DO LIST) -->
+          <div class="focus-card p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <div>
+                <h2 class="font-arcade text-xs text-amber-300 flex items-center gap-2">
+                  <i class="fa-solid fa-scroll text-amber-400"></i>
+                  DAILY QUEST BOARD
+                </h2>
+                <p class="text-[11px] text-slate-400 mt-0.5">Slash quests for Sword SFX + Screen Shake + <strong>50 XP</strong>!</p>
+              </div>
+              <button id="btn-seed-quests" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-cyan-500/40 text-cyan-300 font-semibold" title="Generate Fresh UPSC Daily Study Quests">
+                <i class="fa-solid fa-dice"></i> +Daily Set
+              </button>
+            </div>
+
+            <!-- Add New Quest Form -->
+            <form id="quest-form" class="flex gap-2 mb-3">
+              <input id="quest-input" type="text" required maxlength="110"
+                placeholder="Add UPSC quest (e.g. Revise Art 12-35)..."
+                class="flex-1 bg-slate-950/90 border border-slate-700 focus:border-cyan-400 rounded-lg px-3 py-2 text-xs sm:text-sm text-white outline-none" />
+              <select id="quest-tag" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-cyan-300 outline-none">
+                <option value="Polity">Polity</option>
+                <option value="History">History</option>
+                <option value="Geography">Geo</option>
+                <option value="Economy">Eco</option>
+                <option value="Environment">Env</option>
+                <option value="Ethics">GS-IV</option>
+                <option value="CSAT">CSAT</option>
+              </select>
+              <button type="submit" class="focus-btn px-3 py-2 text-xs">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </form>
+
+            <!-- Quest List Container -->
+            <div id="quest-list" class="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 2: LIVE INTERNET BOOK-GRABBER & COMPLETE 50-BOOK UPSC MASTER VAULT
+         ====================================================================== -->
+    <section id="tab-grabber" class="tab-panel space-y-6">
+
+      <!-- A. LIVE INTERNET BOOK-GRABBER (OPEN LIBRARY + ARCHIVE.ORG FULL-BOOK API) -->
+      <div class="focus-card focus-card p-5">
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 class="font-arcade text-sm sm:text-base text-cyan-300 flex items-center gap-2">
+              <i class="fa-solid fa-satellite-dish text-fuchsia-400"></i>
+              INTERNET BOOK-GRABBER (OPEN LIBRARY + ARCHIVE.ORG FULL TEXT)
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">
+              Pull real books with cover thumbnails, page counts &amp; full-text digital editions directly from the global library network—or import your own local <code>.txt</code> / <code>.epub</code> file!
+            </p>
+          </div>
+
+          <!-- Local File Drop / Import (.txt / .md / .epub) -->
+          <label class="focus-btn px-3.5 py-2 text-xs cursor-pointer">
+            <i class="fa-solid fa-file-arrow-up text-amber-300"></i>
+            <span>Import Local .EPUB / .TXT</span>
+            <input id="local-book-upload" type="file" accept=".txt,.md,.epub" class="hidden" />
+          </label>
+        </div>
+
+        <!-- Search Input Row -->
+        <form id="ol-search-form" class="flex flex-col sm:flex-row gap-2.5">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-cyan-400"></i>
+            <input id="ol-search-input" type="text"
+              placeholder="Search any UPSC book, NCERT, author, or topic (e.g., 'Constitution of India', 'Bipan Chandra', 'Arthashastra', 'World History')..."
+              class="w-full bg-slate-950/95 border-2 border-cyan-500/50 focus:border-amber-400 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none" />
+          </div>
+          <button type="submit" id="btn-ol-search" class="focus-btn focus-btn-accent px-6 py-3 text-xs sm:text-sm">
+            <i class="fa-solid fa-bolt"></i> Scan Global Archives
+          </button>
+        </form>
+
+        <!-- Quick Topic Chips -->
+        <div class="flex flex-wrap items-center gap-1.5 mt-3">
+          <span class="text-[11px] text-slate-400 mr-1">Quick Pull:</span>
+          <button type="button" data-quick-query="Indian Constitution" class="quick-ol-chip text-xs px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-400 text-cyan-200">Indian Constitution</button>
+          <button type="button" data-quick-query="Modern India History" class="quick-ol-chip text-xs px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-400 text-cyan-200">Modern India</button>
+          <button type="button" data-quick-query="Kautilya Arthashastra" class="quick-ol-chip text-xs px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-400 text-cyan-200">Arthashastra</button>
+          <button type="button" data-quick-query="NCERT Geography" class="quick-ol-chip text-xs px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-400 text-cyan-200">NCERT Geography</button>
+          <button type="button" data-quick-query="Mahatma Gandhi Hind Swaraj" class="quick-ol-chip text-xs px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-400 text-cyan-200">Gandhi</button>
+          <button type="button" data-quick-query="Bhagavad Gita Ethics" class="quick-ol-chip text-xs px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-400 text-cyan-200">Ethics &amp; Gita</button>
+          <button type="button" data-quick-query="Economic History of India" class="quick-ol-chip text-xs px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 hover:border-cyan-400 text-cyan-200">Indian Economy</button>
+        </div>
+
+        <!-- Search Status / Retro Error Container / Results Grid -->
+        <div id="ol-search-status" class="mt-4 hidden"></div>
+        <div id="ol-results-grid" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+      </div>
+
+      <!-- B. COMPLETE PRE-VERIFIED 50-BOOK UPSC MASTER CATALOGUE (100% WHOLE BOOKS!) -->
+      <div class="focus-card p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="font-arcade text-sm sm:text-base text-amber-300 flex items-center gap-2">
+              <i class="fa-solid fa-building-columns text-amber-400"></i>
+              COMPLETE UPSC CSE BOOK VAULT (ALL 50 FULL TEXTBOOKS — ZERO SUMMARIES!)
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1">
+              Every book below is pre-linked to its complete unrestricted digital archive (Full Text + Original Scanned Flipbook + EPUB/PDF). Equip individual books or the entire UPSC library!
+            </p>
+          </div>
+          <input id="vault-filter-search" type="text" placeholder="Filter 50 UPSC books by title/topic..."
+            class="bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-lg px-3 py-2 text-xs sm:text-sm text-white outline-none w-full sm:w-64" />
+        </div>
+
+        <!-- Vault Category Pills -->
+        <div id="vault-cat-bar" class="flex items-center gap-1.5 overflow-x-auto pb-3 mb-4 border-b border-slate-800">
+          <button data-vault-cat="ALL" class="vault-cat-pill px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-400 text-slate-950">All UPSC Books (50)</button>
+          <button data-vault-cat="Polity" class="vault-cat-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">GS-II Polity &amp; IR</button>
+          <button data-vault-cat="History" class="vault-cat-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">GS-I History (Anc/Med/Mod/World)</button>
+          <button data-vault-cat="Art & Culture" class="vault-cat-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Art, Culture &amp; Society</button>
+          <button data-vault-cat="Geography" class="vault-cat-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">GS-I Geography</button>
+          <button data-vault-cat="Economy" class="vault-cat-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">GS-III Economy</button>
+          <button data-vault-cat="Environment" class="vault-cat-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Environment &amp; Ecology</button>
+          <button data-vault-cat="Science & Tech" class="vault-cat-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Science &amp; Tech</button>
+          <button data-vault-cat="Ethics" class="vault-cat-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">GS-IV Ethics &amp; Thinkers</button>
+          <button data-vault-cat="Public Administration" class="vault-cat-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Public Admin (Optional)</button>
+        </div>
+
+        <!-- Vault Grid -->
+        <div id="upsc-vault-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 3: INFINITE UPSC QUIZ DUNGEON & PRELIMS MOCK ARENA
+         ====================================================================== -->
+    <section id="tab-arena" class="tab-panel space-y-5">
+
+      <!-- Mode & Subject Control Deck -->
+      <div class="focus-card p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <!-- 4 Game Mode Buttons -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button data-quiz-mode="infinite" class="quiz-mode-btn focus-btn focus-btn-accent px-3.5 py-2 text-xs sm:text-sm">
+              <i class="fa-solid fa-infinity"></i> Infinite Dungeon
+            </button>
+            <button data-quiz-mode="mock" class="quiz-mode-btn focus-btn px-3.5 py-2 text-xs sm:text-sm">
+              <i class="fa-solid fa-stopwatch"></i> UPSC Prelims Mock (+2 / -0.66)
+            </button>
+            <button data-quiz-mode="book" class="quiz-mode-btn focus-btn px-3.5 py-2 text-xs sm:text-sm">
+              <i class="fa-solid fa-book-open-reader"></i> Equipped-Book Live Quiz
+            </button>
+            <button data-quiz-mode="mistakes" class="quiz-mode-btn focus-btn px-3.5 py-2 text-xs sm:text-sm">
+              <i class="fa-solid fa-skull"></i> Mistake Boss (<span id="mistake-count-pill">0</span>)
+            </button>
+          </div>
+
+          <!-- Subject & Mock Length Controls -->
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="quiz-subject-select" class="bg-slate-950 border-2 border-cyan-500/50 rounded-lg px-3 py-2 text-xs sm:text-sm text-cyan-200 font-semibold outline-none">
+              <option value="ALL">All UPSC Subjects (Full Mix)</option>
+              <option value="Polity">GS-II: Polity &amp; Constitution</option>
+              <option value="History">GS-I: Ancient, Medieval &amp; Modern History</option>
+              <option value="Art & Culture">GS-I: Art, Culture &amp; Heritage</option>
+              <option value="Geography">GS-I: Physical &amp; Indian Geography</option>
+              <option value="Economy">GS-III: Indian Economy &amp; RBI</option>
+              <option value="Environment">GS-III: Environment, Parks &amp; Conventions</option>
+              <option value="Science & Tech">GS-III: Science, Space &amp; Biotech</option>
+              <option value="Ethics">GS-IV: Ethics, Integrity &amp; Thinkers</option>
+              <option value="Public Administration">Public Administration (Optional)</option>
+              <option value="CSAT">CSAT Paper-II: Quant &amp; Reasoning</option>
+            </select>
+
+            <select id="mock-length-select" class="hidden bg-slate-950 border-2 border-amber-400/60 rounded-lg px-3 py-2 text-xs sm:text-sm text-amber-300 font-semibold outline-none">
+              <option value="10">10 Qs Mini Sprint (12 min)</option>
+              <option value="25">25 Qs Sectional Test (30 min)</option>
+              <option value="50">50 Qs Half Prelims (60 min)</option>
+              <option value="100">100 Qs Full GS Paper-I (120 min)</option>
+            </select>
+
+            <button id="btn-new-mock" class="hidden focus-btn focus-btn-accent px-3 py-2 text-xs">
+              <i class="fa-solid fa-rotate"></i> Start Fresh Mock
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Battleground Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- LEFT 4 COLS: MONSTER / BOSS STAGE + LIVE SCOREBOARD -->
+        <div class="lg:col-span-4 space-y-4">
+          <div class="focus-card focus-card p-5 text-center relative overflow-hidden">
+            <div class="flex items-center justify-between text-xs mb-2">
+              <span id="monster-wave-badge" class="font-arcade text-[10px] px-2.5 py-1 rounded bg-purple-950 border border-purple-400/50 text-purple-200">
+                WAVE #1
+              </span>
+              <span id="quiz-timer-badge" class="font-arcade text-[10px] px-2.5 py-1 rounded bg-slate-900 border border-cyan-400/40 text-cyan-300">
+                ♾️ ENDLESS
+              </span>
+            </div>
+
+            <!-- Monster Avatar -->
+            <div id="monster-stage" class="my-4 py-4 rounded-xl bg-slate-950/80 border border-slate-800 relative">
+              <div id="monster-icon-wrap" class="monster-avatar w-24 h-24 mx-auto rounded-2xl bg-slate-900 border-2 border-fuchsia-400/60 flex items-center justify-center shadow-[0_0_28px_rgba(181,23,158,0.4)]">
+                <i id="monster-icon" class="fa-solid fa-gavel text-5xl text-cyan-300"></i>
+              </div>
+              <h3 id="monster-name" class="font-arcade text-xs sm:text-sm text-amber-300 mt-3 px-2">
+                Laxmikanth Article Golem
+              </h3>
+              <p id="monster-taunt" class="text-xs italic text-slate-400 mt-1 px-4">
+                "Confuse ONE Constitutional Schedule and your 2 marks belong to me!"
+              </p>
+
+              <!-- Monster HP Bar -->
+              <div class="mt-3 px-5">
+                <div class="flex justify-between text-[10px] font-bold text-rose-300 mb-1">
+                  <span>MONSTER HP</span>
+                  <span id="monster-hp-text">100 / 100</span>
+                </div>
+                <div class="w-full h-3 bg-slate-900 rounded-full border border-rose-500/50 overflow-hidden">
+                  <div id="monster-hp-fill" class="h-full bg-gradient-to-r from-rose-600 via-red-500 to-amber-400 transition-all duration-300" style="width: 100%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Combat / UPSC Prelims Marking Telemetry -->
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800">
+                <div class="text-[10px] text-slate-400 uppercase">UPSC Marks</div>
+                <div id="stat-upsc-marks" class="font-arcade text-xs text-emerald-400 mt-1">+0.00</div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800">
+                <div class="text-[10px] text-slate-400 uppercase">Accuracy</div>
+                <div id="stat-accuracy" class="font-arcade text-xs text-cyan-300 mt-1">0%</div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800">
+                <div class="text-[10px] text-slate-400 uppercase">Solved</div>
+                <div id="stat-solved" class="font-arcade text-xs text-amber-300 mt-1">0</div>
+              </div>
+            </div>
+
+            <!-- Power-Up Lifelines -->
+            <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+              <button id="btn-5050-lifeline" class="focus-btn flex-1 py-2 text-xs" title="Costs 15% Mana: Eliminates 2 Wrong Options (UPSC Elimination Technique!)">
+                <i class="fa-solid fa-scissors text-amber-300"></i> 50:50 Eliminate (-15 Mana)
+              </button>
+              <button id="btn-skip-question" class="focus-btn px-3 py-2 text-xs" title="Intelligent Skip: 0.00 Marks (Avoid -0.66 Negative Marking!)">
+                Skip (0.00) <i class="fa-solid fa-forward"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT 8 COLS: QUESTION CARD + OPTIONS + TOPPER EXPLANATION -->
+        <div class="lg:col-span-8 space-y-4">
+          <div id="quiz-question-card" class="focus-card p-5 sm:p-6">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-800">
+              <div class="flex items-center gap-2">
+                <span id="q-subject-badge" class="px-2.5 py-1 rounded-md text-xs font-bold bg-cyan-500/20 border border-cyan-400/50 text-cyan-300">
+                  Polity
+                </span>
+                <span id="q-type-badge" class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-800 text-amber-300">
+                  UPSC 3-Statement Matrix
+                </span>
+              </div>
+              <span class="text-xs text-slate-400">
+                Tip: Click <i class="fa-solid fa-eye-slash"></i> on an option to strike-eliminate it before answering!
+              </span>
+            </div>
+
+            <!-- Question Stem -->
+            <div id="q-prompt-text" class="text-sm sm:text-base leading-relaxed text-slate-100 whitespace-pre-line font-medium mb-5">
+              Loading UPSC Dungeon Question...
+            </div>
+
+            <!-- Options List -->
+            <div id="q-options-list" class="space-y-2.5">
+              <!-- Populated dynamically -->
+            </div>
+
+            <!-- Explanation & Next Wave Box (Revealed upon Answer) -->
+            <div id="q-explanation-box" class="hidden mt-5 p-4 rounded-xl bg-slate-950/95 border-2 border-cyan-400/50 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div id="q-result-banner" class="font-arcade text-xs text-emerald-400">
+                  CORRECT ANSWER! +2.00 MARKS • +25 XP
+                </div>
+                <button id="btn-bookmark-question" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-amber-400/50 text-amber-300 font-semibold">
+                  <i class="fa-solid fa-bookmark"></i> Save to Revision Notes
+                </button>
+              </div>
+              <div id="q-explanation-text" class="text-xs sm:text-sm text-slate-200 whitespace-pre-line leading-relaxed border-t border-slate-800 pt-2.5"></div>
+              <div class="pt-1 flex justify-end">
+                <button id="btn-next-question" class="focus-btn focus-btn-accent px-5 py-2.5 text-xs sm:text-sm">
+                  <span>Next Question / Next Monster</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mock Test Summary Card (Shown when Timed Mock finishes) -->
+          <div id="mock-summary-card" class="hidden focus-card focus-card p-6 space-y-4">
+            <!-- Populated at end of Timed Mock -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 4: HERO PROFILE, COLLECTIBLE BADGES, NOTES & SAVE BACKUP
+         ====================================================================== -->
+    <section id="tab-hero" class="tab-panel space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Avatar Switcher & Lifetime UPSC Stats -->
+        <div class="lg:col-span-5 space-y-5">
+          <div class="focus-card p-5">
+            <h2 class="font-arcade text-xs sm:text-sm text-cyan-300 mb-3">
+              <i class="fa-solid fa-user-shield mr-1"></i> CHOOSE YOUR IAS RPG AVATAR
+            </h2>
+            <div id="avatar-selector-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div class="focus-card p-5 space-y-3">
+            <h2 class="font-arcade text-xs sm:text-sm text-amber-300">
+              <i class="fa-solid fa-chart-pie mr-1"></i> ASPIRANT DOSSIER &amp; SAVE DATA
+            </h2>
+            <div id="hero-stats-grid" class="grid grid-cols-2 gap-2.5 text-xs">
+              <!-- Populated dynamically -->
+            </div>
+            <div class="pt-3 border-t border-slate-800 flex flex-wrap gap-2">
+              <button id="btn-export-save" class="focus-btn px-3 py-2 text-xs">
+                <i class="fa-solid fa-download"></i> Export Save JSON
+              </button>
+              <label class="focus-btn px-3 py-2 text-xs cursor-pointer">
+                <i class="fa-solid fa-upload"></i> Import Save
+                <input id="input-import-save" type="file" accept=".json" class="hidden" />
+              </label>
+              <button id="btn-reset-save" class="focus-btn focus-btn-accent px-3 py-2 text-xs ml-auto">
+                <i class="fa-solid fa-trash-can"></i> Reset Progress
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collectible Mana Badges & Saved Study Notes -->
+        <div class="lg:col-span-7 space-y-5">
+          <div class="focus-card focus-card p-5">
+            <h2 class="font-arcade text-xs sm:text-sm text-fuchsia-300 mb-1">
+              <i class="fa-solid fa-gem mr-1"></i> COLLECTIBLE MANA RELIC BADGES (12)
+            </h2>
+            <p class="text-xs text-slate-400 mb-4">Complete Mana Focus Timer sessions to unlock rare UPSC cosmetic relics!</p>
+            <div id="badges-vault-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div class="focus-card p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="font-arcade text-xs sm:text-sm text-cyan-300">
+                <i class="fa-solid fa-notebook mr-1"></i> SAVED BOOK NOTES &amp; QUIZ FLASHCARDS
+              </h2>
+              <span id="saved-notes-count" class="text-xs text-slate-400">0 items</span>
+            </div>
+            <div id="saved-notes-list" class="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB: CURRENT AFFAIRS
+         ====================================================================== -->
+    <section id="tab-ca" class="tab-panel space-y-5">
+      <div class="focus-card p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-xs sm:text-sm font-bold text-cyan-300 flex items-center gap-2">
+              <i class="fa-solid fa-newspaper"></i> DAILY CURRENT AFFAIRS
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Curated UPSC-relevant current affairs with Prelims &amp; Mains mapping.</p>
+          </div>
+          <button id="btn-ca-refresh" class="focus-btn px-3 py-1.5 text-xs">
+            <i class="fa-solid fa-rotate-right"></i> Refresh
+          </button>
+        </div>
+        <div id="ca-list" class="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB: PYQ BANK
+         ====================================================================== -->
+    <section id="tab-pyq" class="tab-panel space-y-5">
+      <div class="focus-card p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-2">
+              <i class="fa-solid fa-history"></i> PYQ BANK (PREVIOUS YEAR QUESTIONS)
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Handcrafted PYQ-style questions tagged by year. Filter by subject/year.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="pyq-subject" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none">
+              <option value="ALL">All Subjects</option>
+              <option value="Polity">Polity</option>
+              <option value="History">History</option>
+              <option value="Art & Culture">Art &amp; Culture</option>
+              <option value="Geography">Geography</option>
+              <option value="Economy">Economy</option>
+              <option value="Environment">Environment</option>
+              <option value="Science & Tech">Science &amp; Tech</option>
+              <option value="Ethics">Ethics</option>
+              <option value="CSAT">CSAT</option>
+            </select>
+            <select id="pyq-year" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none">
+              <option value="ALL">All Years</option>
+            </select>
+          </div>
+        </div>
+        <div id="pyq-list" class="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB: MAINS ANSWER WRITING
+         ====================================================================== -->
+    <section id="tab-mains" class="tab-panel space-y-5">
+      <div class="focus-card p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-xs sm:text-sm font-bold text-emerald-300 flex items-center gap-2">
+              <i class="fa-solid fa-pen-nib"></i> MAINS ANSWER WRITING
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Timed answer practice with word counter. Save and review your answers.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <!-- Prompts -->
+          <div class="lg:col-span-1 space-y-4">
+            <div class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Select Prompt</div>
+            <div id="mains-prompt-list" class="space-y-2">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+          <!-- Editor -->
+          <div class="lg:col-span-2 space-y-3">
+            <div id="mains-current-prompt" class="p-3 rounded-lg bg-slate-800/50 border border-slate-700 text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line">
+              Select a prompt to begin.
+            </div>
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span id="mains-timer">Time: 25:00</span>
+              <span id="mains-wordcount">Words: 0</span>
+              <span id="mains-gs-tag">GS Paper: —</span>
+            </div>
+            <textarea id="mains-answer" rows="14" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 outline-none focus:border-cyan-400 resize-none font-reader leading-relaxed" placeholder="Write your answer here..."></textarea>
+            <div class="flex gap-2">
+              <button id="mains-start-timer" class="focus-btn focus-btn-accent flex-1 py-2 text-xs"><i class="fa-solid fa-play"></i> Start Timer</button>
+              <button id="mains-pause-timer" class="focus-btn flex-1 py-2 text-xs"><i class="fa-solid fa-pause"></i> Pause</button>
+              <button id="mains-reset-timer" class="focus-btn flex-1 py-2 text-xs"><i class="fa-solid fa-rotate-right"></i> Reset</button>
+              <button id="mains-save" class="focus-btn focus-btn-indigo flex-1 py-2 text-xs"><i class="fa-solid fa-save"></i> Save Answer</button>
+            </div>
+            <div id="mains-saved-list" class="mt-4 space-y-2 max-h-48 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 italic">No saved answers yet.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB: FLASHCARDS (SPACED REPETITION)
+         ====================================================================== -->
+    <section id="tab-flashcards" class="tab-panel space-y-5">
+      <div class="focus-card p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-xs sm:text-sm font-bold text-fuchsia-300 flex items-center gap-2">
+              <i class="fa-solid fa-memory"></i> SPACED-REPETITION FLASHCARDS
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Review due cards. Rate your recall to schedule next review.</p>
+          </div>
+          <button id="fc-add-custom" class="focus-btn px-3 py-1.5 text-xs" title="Add Custom Flashcard"><i class="fa-solid fa-plus"></i> Add Card</button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <!-- Stats -->
+          <div class="lg:col-span-1 space-y-4">
+            <div class="focus-card p-3">
+              <div class="text-xs font-bold text-cyan-300 uppercase mb-1">Due Today</div>
+              <div id="fc-due-count" class="text-2xl font-bold text-slate-100">0</div>
+            </div>
+            <div class="focus-card p-3">
+              <div class="text-xs font-bold text-amber-300 uppercase mb-1">Total Cards</div>
+              <div id="fc-total-count" class="text-2xl font-bold text-slate-100">0</div>
+            </div>
+            <div class="focus-card p-3">
+              <div class="text-xs font-bold text-emerald-300 uppercase mb-1">Mastered</div>
+              <div id="fc-mastered-count" class="text-2xl font-bold text-slate-100">0</div>
+            </div>
+          </div>
+          <!-- Card -->
+          <div class="lg:col-span-2">
+            <div id="fc-card-container" class="h-[300px] flex items-center justify-center">
+              <div class="text-center text-slate-500 text-xs">Click "Study Due Cards" to begin</div>
+            </div>
+            <div class="mt-4 flex items-center justify-between">
+              <button id="fc-study" class="focus-btn focus-btn-accent px-4 py-2 text-xs"><i class="fa-solid fa-play"></i> Study Due Cards</button>
+              <div id="fc-progress" class="text-xs text-slate-400">0 / 0</div>
+            </div>
+            <div class="mt-3 flex gap-2 hidden" id="fc-rating">
+              <button class="focus-btn flex-1 py-2 text-xs text-rose-400 hover:bg-rose-900/20" data-rating="1"><i class="fa-solid fa-face-sad-tear"></i> Again</button>
+              <button class="focus-btn flex-1 py-2 text-xs text-amber-400 hover:bg-amber-900/20" data-rating="2"><i class="fa-solid fa-face-meh"></i> Hard</button>
+              <button class="focus-btn flex-1 py-2 text-xs text-cyan-400 hover:bg-cyan-900/20" data-rating="3"><i class="fa-solid fa-face-smile"></i> Good</button>
+              <button class="focus-btn flex-1 py-2 text-xs text-emerald-400 hover:bg-emerald-900/20" data-rating="4"><i class="fa-solid fa-star"></i> Easy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB: BOOK HIGHLIGHTS
+         ====================================================================== -->
+    <section id="tab-highlights" class="tab-panel space-y-5">
+      <div class="focus-card p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-xs sm:text-sm font-bold text-indigo-300 flex items-center gap-2">
+              <i class="fa-solid fa-highlighter"></i> BOOK HIGHLIGHTS &amp; ANNOTATIONS
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Highlights and notes you save while reading full books.</p>
+          </div>
+        </div>
+        <div id="highlights-list" class="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB: ANALYTICS
+         ====================================================================== -->
+    <section id="tab-analytics" class="tab-panel space-y-5">
+      <div class="focus-card p-5">
+        <h2 class="text-xs sm:text-sm font-bold text-cyan-300 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie"></i> SUBJECT-WISE PROGRESS ANALYTICS
+        </h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="focus-card p-4">
+            <h3 class="text-xs font-bold text-slate-300 mb-3">XP by Subject</h3>
+            <canvas id="chart-xp-subject"></canvas>
+          </div>
+          <div class="focus-card p-4">
+            <h3 class="text-xs font-bold text-slate-300 mb-3">Books per Subject</h3>
+            <canvas id="chart-books-subject"></canvas>
+          </div>
+        </div>
+        <div class="focus-card p-4 mt-4">
+          <h3 class="text-xs font-bold text-slate-300 mb-3">Weak Area Suggestions</h3>
+          <div id="analytics-weak-areas" class="space-y-2 text-xs text-slate-300">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB: EXAM SIMULATOR
+         ====================================================================== -->
+    <section id="tab-exam" class="tab-panel space-y-5">
+      <div class="focus-card p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-xs sm:text-sm font-bold text-rose-300 flex items-center gap-2">
+              <i class="fa-solid fa-clock"></i> EXAM DAY SIMULATOR
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Full-length timed GS Paper-I simulation with exact UPSC marking (+2 / −0.66).</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-1 space-y-3">
+            <div class="text-xs font-bold text-slate-300 uppercase mb-2">Configure</div>
+            <select id="exam-length" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none">
+              <option value="100">100 Qs — Full GS Paper-I (120 min)</option>
+              <option value="50">50 Qs — Half Paper (60 min)</option>
+              <option value="25">25 Qs — Sectional (30 min)</option>
+            </select>
+            <button id="exam-start" class="focus-btn focus-btn-accent w-full py-2.5 text-xs"><i class="fa-solid fa-play"></i> Start Exam</button>
+            <div id="exam-status" class="text-xs text-slate-500 mt-2">Ready</div>
+          </div>
+          <div class="lg:col-span-2 space-y-3">
+            <div id="exam-question-card" class="hidden focus-card p-5">
+              <div class="flex items-center justify-between mb-3">
+                <span id="exam-qnum" class="text-xs font-bold text-cyan-300">Q1</span>
+                <span id="exam-timer" class="font-arcade text-xs text-amber-300">120:00</span>
+              </div>
+              <div id="exam-prompt" class="text-sm leading-relaxed text-slate-100 mb-4 whitespace-pre-line"></div>
+              <div id="exam-options" class="space-y-2"></div>
+              <div class="mt-4 flex gap-2">
+                <button id="exam-prev" class="focus-btn px-4 py-2 text-xs"><i class="fa-solid fa-chevron-left"></i> Prev</button>
+                <button id="exam-next" class="focus-btn focus-btn-accent px-4 py-2 text-xs">Next <i class="fa-solid fa-chevron-right"></i></button>
+                <button id="exam-submit" class="hidden focus-btn focus-btn-rose px-4 py-2 text-xs"><i class="fa-solid fa-flag"></i> Submit Exam</button>
+              </div>
+            </div>
+            <div id="exam-summary" class="hidden focus-card p-5 space-y-4">
+              <!-- Populated after exam -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB: GOAL TRACKER
+         ====================================================================== -->
+    <section id="tab-goal" class="tab-panel space-y-5">
+      <div class="focus-card p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-2">
+              <i class="fa-solid fa-flag-checkered"></i> LBSNAA GOAL TRACKER
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">Countdown to next UPSC Prelims and weekly study targets.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="focus-card p-4 text-center">
+            <div id="goal-days" class="text-3xl font-bold text-cyan-300">--</div>
+            <div class="text-xs text-slate-400">Days to Prelims</div>
+          </div>
+          <div class="focus-card p-4 text-center">
+            <div id="goal-weeks" class="text-3xl font-bold text-amber-300">--</div>
+            <div class="text-xs text-slate-400">Weeks Remaining</div>
+          </div>
+          <div class="focus-card p-4 text-center">
+            <div id="goal-xp-target" class="text-3xl font-bold text-emerald-300">--</div>
+            <div class="text-xs text-slate-400">XP This Week</div>
+          </div>
+        </div>
+        <div class="focus-card p-4">
+          <h3 class="text-xs font-bold text-slate-300 mb-3">Weekly Targets</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between p-2 rounded border border-slate-700 bg-slate-900/50">
+              <span class="text-xs text-slate-200">Books to complete</span>
+              <div class="flex items-center gap-2">
+                <input id="goal-books" type="number" value="2" class="w-16 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none" />
+                <span class="text-xs text-slate-500">/ week</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded border border-slate-700 bg-slate-900/50">
+              <span class="text-xs text-slate-200">Quiz questions</span>
+              <div class="flex items-center gap-2">
+                <input id="goal-quiz" type="number" value="50" class="w-16 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none" />
+                <span class="text-xs text-slate-500">/ week</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded border border-slate-700 bg-slate-900/50">
+              <span class="text-xs text-slate-200">Mains answers</span>
+              <div class="flex items-center gap-2">
+                <input id="goal-mains" type="number" value="2" class="w-16 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white outline-none" />
+                <span class="text-xs text-slate-500">/ week</span>
+              </div>
+            </div>
+          </div>
+          <button id="goal-save" class="mt-3 focus-btn focus-btn-accent w-full py-2 text-xs"><i class="fa-solid fa-save"></i> Save Targets</button>
+        </div>
+        <div class="focus-card p-4">
+          <h3 class="text-xs font-bold text-slate-300 mb-3">This Week's Progress</h3>
+          <div id="goal-progress" class="space-y-2 text-xs text-slate-300">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+       DEDICATED FULL-BOOK "READ MODE" GRIMOIRE VIEWPORT MODAL
+       Streams Complete Books (Chapter-by-Chapter / Full Volume Text + Scanned
+       Interactive Archive Flipbook + Direct EPUB/PDF Downloads + Book Quiz!)
+       ======================================================================== -->
+  <div id="book-reader-modal" class="fixed inset-0 z-50 hidden bg-slate-950/95 backdrop-blur-md flex flex-col">
+
+    <!-- Reader Top Command Header -->
+    <div class="px-3 sm:px-6 py-2.5 bg-[#090d1f] border-b-2 border-cyan-400/50 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-3 min-w-0">
+        <button id="btn-close-reader" class="focus-btn px-3 py-1.5 text-xs" title="Close Reader (Esc)">
+          <i class="fa-solid fa-arrow-left"></i> Shelf
+        </button>
+        <div class="min-w-0">
+          <h2 id="reader-book-title" class="text-sm sm:text-base font-bold text-amber-300 truncate max-w-[240px] sm:max-w-md md:max-w-xl">
+            Book Title
+          </h2>
+          <div class="flex items-center gap-2 text-[11px] text-slate-400">
+            <span id="reader-book-author">Author</span>
+            <span>•</span>
+            <span id="reader-book-subject" class="text-cyan-300 font-semibold">Subject</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reader Mode Switcher + Battle Quiz Trigger -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button data-reader-mode="text" class="reader-mode-btn focus-btn focus-btn-accent px-3 py-1.5 text-xs">
+          <i class="fa-solid fa-book-open"></i> Full-Text E-Reader
+        </button>
+        <button data-reader-mode="flipbook" class="reader-mode-btn focus-btn px-3 py-1.5 text-xs">
+          <i class="fa-solid fa-images"></i> Original Scanned Flipbook
+        </button>
+        <button data-reader-mode="downloads" class="reader-mode-btn focus-btn px-3 py-1.5 text-xs">
+          <i class="fa-solid fa-file-arrow-down"></i> EPUB / PDF Files
+        </button>
+        <button id="btn-quiz-this-book" class="focus-btn focus-btn-indigo px-3 py-1.5 text-xs" title="Battle Study Monsters using Questions from this Book!">
+          <i class="fa-solid fa-khanda"></i> Quiz This Book
+        </button>
+        <button id="btn-toggle-reader-notes" class="focus-btn px-2.5 py-1.5 text-xs" title="Toggle Margin Study Notes">
+          <i class="fa-solid fa-pen-to-square"></i> Notes
+        </button>
+        <button id="btn-reader-fullscreen" class="focus-btn focus-btn-indigo px-2.5 py-1.5 text-xs" title="Toggle Fullscreen Reader">
+          <i class="fa-solid fa-expand"></i> Fullscreen
+        </button>
+        <button id="btn-reader-new-tab" class="focus-btn focus-btn-accent px-3 py-1.5 text-xs" title="Open Book in New Browser Tab (Best for Reading & Notes)">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in New Tab
+        </button>
+      </div>
+    </div>
+
+    <!-- Reader Main Body -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+      <!-- Left Sidebar: Chapters / Sections + In-Book Search (for Full-Text Mode) -->
+      <aside id="reader-chapters-sidebar" class="w-64 bg-[#0b1024] border-r border-slate-800 flex-col hidden md:flex">
+        <div class="p-3 border-b border-slate-800 space-y-2">
+          <div class="font-arcade text-[10px] text-cyan-300 flex items-center justify-between">
+            <span>CHAPTERS &amp; SEARCH</span>
+            <span id="reader-total-words" class="text-amber-300"></span>
+          </div>
+          <!-- Search inside Full Book -->
+          <div class="flex gap-1">
+            <input id="reader-search-input" type="text" placeholder="Search word in book..."
+              class="flex-1 bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded px-2.5 py-1.5 text-xs text-white outline-none" />
+            <button id="btn-reader-search" class="px-2.5 py-1.5 rounded bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 text-xs hover:bg-cyan-500/30">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+          </div>
+          <div id="reader-search-hits" class="text-[11px] text-amber-300 hidden"></div>
+        </div>
+
+        <div id="reader-chapter-list" class="flex-1 overflow-y-auto p-2 space-y-1 text-xs">
+          <!-- Populated dynamically with Chapters / Sections -->
+        </div>
+      </aside>
+
+      <!-- Center Viewport: Mode 1 (Reflowable Full-Text Reader), Mode 2 (Archive Flipbook), Mode 3 (Downloads/Metadata) -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+
+        <!-- MODE 1: REFLOWABLE FULL-TEXT E-READER -->
+        <div id="reader-view-text" class="flex-1 flex flex-col overflow-hidden">
+          <!-- Formatting Toolbar -->
+          <div class="px-4 py-2 bg-slate-900/95 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <button id="btn-mobile-chapters" class="md:hidden px-2.5 py-1 rounded bg-slate-800 text-cyan-300 border border-slate-700">
+                <i class="fa-solid fa-list"></i> Chapters
+              </button>
+              <span class="text-slate-400">Theme:</span>
+              <button data-rtheme="cyber" class="rtheme-btn px-2 py-0.5 rounded border border-cyan-400 bg-[#0b1021] text-cyan-200 font-semibold">Cyber</button>
+              <button data-rtheme="sepia" class="rtheme-btn px-2 py-0.5 rounded border border-slate-600 bg-[#f4ecd8] text-[#2c221e] font-semibold">Sepia</button>
+              <button data-rtheme="day" class="rtheme-btn px-2 py-0.5 rounded border border-slate-600 bg-white text-slate-900 font-semibold">Paper</button>
+              <button data-rtheme="oled" class="rtheme-btn px-2 py-0.5 rounded border border-slate-700 bg-black text-slate-200 font-semibold">OLED</button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button id="btn-font-dec" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold">A-</button>
+              <span id="reader-font-label" class="text-slate-300 w-10 text-center">18px</span>
+              <button id="btn-font-inc" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold">A+</button>
+              <select id="tts-speed-select" class="bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-[10px] text-slate-300 outline-none focus:border-cyan-400">
+                <option value="0.75">0.75×</option>
+                <option value="1" selected>1×</option>
+                <option value="1.25">1.25×</option>
+                <option value="1.5">1.5×</option>
+              </select>
+              <button id="btn-tts-toggle" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-cyan-500/40 text-cyan-300" title="Read Page Aloud (Text-to-Speech)">
+                <i class="fa-solid fa-headphones"></i> Listen
+              </button>
+              <button id="btn-bookmark-page" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-amber-400/40 text-amber-300" title="Save Bookmark on Current Page">
+                <i class="fa-solid fa-bookmark"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Scrollable Book Page Surface -->
+          <div id="reader-scroll-surface" class="flex-1 overflow-y-auto reader-surface-cyber transition-colors duration-200">
+            <div class="max-w-3xl mx-auto px-5 sm:px-10 py-8">
+              <div id="reader-loading-state" class="py-16 text-center space-y-3">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-cyan-400"></i>
+                <div class="font-arcade text-xs text-cyan-300">STREAMING COMPLETE BOOK FROM DIGITAL ARCHIVE...</div>
+                <p class="text-xs text-slate-400">Fetching full chapters &amp; paginating whole book text (not a summary!)</p>
+              </div>
+              <article id="reader-prose-content" class="reader-prose font-reader hidden" style="font-size: 18px;"></article>
+            </div>
+          </div>
+
+          <!-- Bottom Pagination Bar (+5 XP per Page Read!) -->
+          <div class="px-4 py-2.5 bg-[#090d1f] border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <button id="btn-prev-page" class="focus-btn px-3.5 py-1.5 text-xs">
+              <i class="fa-solid fa-chevron-left"></i> Prev Page
+            </button>
+
+            <div class="flex items-center gap-3 flex-1 max-w-md mx-auto">
+              <span id="reader-page-indicator" class="font-arcade text-[10px] text-amber-300 whitespace-nowrap">
+                Page 1 / 1
+              </span>
+              <input id="reader-page-slider" type="range" min="1" max="1" value="1"
+                class="flex-1 accent-cyan-400 cursor-pointer" />
+              <span class="text-[11px] text-emerald-400 font-semibold hidden sm:inline">+5 XP/pg</span>
+            </div>
+
+            <button id="btn-next-page" class="focus-btn focus-btn-accent px-3.5 py-1.5 text-xs">
+              Next Page (+5 XP) <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- MODE 2: ORIGINAL SCANNED BOOK FLIPBOOK (ARCHIVE.ORG THEATER EMBED) -->
+        <div id="reader-view-flipbook" class="hidden flex-1 flex-col bg-black">
+          <div class="px-4 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs text-slate-300">
+            <span><i class="fa-solid fa-book text-amber-300 mr-1.5"></i> Official Archive.org Full Scanned Book Flipbook (Original Pages, Maps, Tables &amp; Diagrams)</span>
+            <a id="reader-external-ia-link" href="#" target="_blank" rel="noopener noreferrer" class="text-cyan-300 hover:underline font-semibold">
+              Open Fullscreen on Archive.org <i class="fa-solid fa-arrow-up-right-from-square ml-1"></i>
+            </a>
+          </div>
+          <iframe id="reader-flipbook-iframe" class="w-full flex-1 border-0 bg-slate-950" allowfullscreen></iframe>
+        </div>
+
+        <!-- MODE 3: DIRECT EPUB / PDF / FULL-TEXT VAULT DOWNLOADS -->
+        <div id="reader-view-downloads" class="hidden flex-1 overflow-y-auto p-6 bg-[#0b1021]">
+          <div id="reader-downloads-content" class="max-w-3xl mx-auto space-y-4">
+            <!-- Populated dynamically with direct .epub, .pdf, _djvu.txt & Open Library links -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Collapsible Book Margin Notes Drawer -->
+      <aside id="reader-notes-drawer" class="hidden w-80 bg-[#0b1024] border-l border-cyan-500/30 p-4 flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-arcade text-[10px] text-amber-300">BOOK MARGIN NOTES</h3>
+          <button id="btn-close-notes-drawer" class="text-slate-400 hover:text-white text-sm">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400">Your UPSC revision pointers for this book auto-save to LocalStorage.</p>
+        <textarea id="reader-book-notes-textarea" rows="12"
+          placeholder="Jot down Articles, dates, committee names, or Mains fodder from this book..."
+          class="flex-1 bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-lg p-3 text-xs text-slate-100 outline-none resize-none"></textarea>
+        <button id="btn-save-book-note" class="focus-btn focus-btn-accent py-2 text-xs">
+          <i class="fa-solid fa-floppy-disk"></i> Save Note (+10 XP)
+        </button>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       SCRIPTS: UPSC MASTER DATA + CORE GAMIFIED RPG APPLICATION
+       ======================================================================== -->
+  <script src="upsc-data.js"></script>
+  <script src="current-affairs.js"></script>
+  <script src="app.js"></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

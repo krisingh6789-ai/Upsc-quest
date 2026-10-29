@@ -1,0 +1,38 @@
+{
+  "name": "LBSNAA Quest \u2014 UPSC Study App",
+  "short_name": "LBSNAA Quest",
+  "description": "Gamified UPSC CSE preparation app with full books, infinite quizzes, flashcards, current affairs, mains answer writing, and analytics.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "education",
+    "books",
+    "reference"
+  ],
+  "lang": "en-IN",
+  "scope": "./",
+  "id": "./index.html"
+}

@@ -1,0 +1,7 @@
+{
+  "appId": "com.kriss.lbsnaaquest",
+  "appName": "LBSNAA Quest",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}
